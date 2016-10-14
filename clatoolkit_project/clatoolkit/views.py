@@ -246,6 +246,7 @@ def register_existing(request, unit_id):
     if not unit.users.filter(id = request.user.id).exists():
         membership = UnitOfferingMembership(user=request.user, unit=unit, admin=False)
         membership.save()
+        
     return redirect("myunits")
 
 

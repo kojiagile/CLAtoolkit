@@ -18,6 +18,7 @@ from django.core.exceptions import PermissionDenied
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.core.exceptions import ObjectDoesNotExist
 
 import requests
 
@@ -27,8 +28,20 @@ import requests
 def get_trello_boards(request):
     user_profile = UserProfile.objects.get(user=request.user)
     trello_member_id = user_profile.trello_account_name
+    token_qs = None
+    try:
+        token_qs = OfflinePlatformAuthToken.objects.get(user_smid=trello_member_id)
+    except ObjectDoesNotExist:
+        # When user smid is not found (This occurs when user hasn't registered their Trello ID yet)
+        token_qs = None
 
-    token_qs = OfflinePlatformAuthToken.objects.get(user_smid=trello_member_id)
+    # Return error message to the client
+    if token_qs is None:
+        html_tags = '<p class="no-trello-id">Your Trello account is not found.<br>'
+        html_tags = html_tags + 'Register your account in Social Media Accounts update page before attaching a Trello board.<br>'
+        html_tags = html_tags + '(Click your name (top right corner) - Social Media Accounts)</p>'
+        return Response(('').join([html_tags]))
+
     token = token_qs.token
     key = request.GET.get('key')
     course_code = request.GET.get('course_code')
