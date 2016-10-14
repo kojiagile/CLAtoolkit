@@ -243,10 +243,9 @@ def register_existing(request, unit_id):
     except UnitOffering.DoesNotExist:
         raise Http404
 
-    if not unit.users.filter(user=request.user).exists():
+    if not unit.users.filter(id = request.user.id).exists():
         membership = UnitOfferingMembership(user=request.user, unit=unit, admin=False)
         membership.save()
-
     return redirect("myunits")
 
 
