@@ -37,7 +37,7 @@ def get_trello_boards(request):
 
     # Return error message to the client
     if token_qs is None:
-        html_tags = '<p class="no-trello-id">Your Trello account is not found.<br>'
+        html_tags = '<p class="no-trello-id">Your Trello account is incorrect not found.<br>'
         html_tags = html_tags + 'Register your account in Social Media Accounts update page before attaching a Trello board.<br>'
         html_tags = html_tags + '(Click your name (top right corner) - Social Media Accounts)</p>'
         return Response(('').join([html_tags]))
@@ -133,18 +133,37 @@ def check_access(required_roles=None):
 def trello_remove_board(request):
     course_code = request.GET.get('course_code')
 
-    trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(user=request.user, course_code=course_code)
-    unit = UnitOffering.objects.get(code=course_code)
+    trello_user_course_map = None
+    unit = None
+    try:
+        trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(user=request.user, course_code=course_code)
+        unit = UnitOffering.objects.get(code=course_code)
+    except ObjectDoesNotExist:
+        raise Http404
 
-    #pythonic code below removes the ID of the attached board being removed
-    unit.attached_trello_boards = ','.join([board for board in unit.attached_trello_boards.split(',')
-                           if board is not trello_user_course_map.board_id[0]])
+    new_board_list = []
+    same_board_list = []
+    for board in unit.attached_trello_boards.split(','):
+        if board != trello_user_course_map[0].board_id:
+            new_board_list.append(board)
+        else:
+            same_board_list.append(board)
+
+    # Multiple users are likely to use the same Trello board. 
+    # So, two or more same board IDs are likely to be found in unit.attached_trello_boards column.
+    # Since we only want to delete the user's board ID, we remove one of the same board IDs from the column.
+    # 
+    # attached_trello_boards column only has board IDs.
+    # So, we cannot identify exactly which ID is the user's when multiple same IDs exist.
+    for index in range(1, len(same_board_list)):
+        # Start the for loop from 1 (not 0) to remove one of the same board IDs.
+        new_board_list.append(same_board_list[index])
+    unit.attached_trello_boards = ','.join(new_board_list)
 
     unit.save()
-
     trello_user_course_map.delete()
-
     return myunits(request)
+
 
 @login_required
 @api_view()
