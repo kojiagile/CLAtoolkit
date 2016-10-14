@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseServerError
 from django.db import connection
 from utils import *
 from clatoolkit.models import OfflinePlatformAuthToken, UserProfile, OauthFlowTemp, UnitOffering, UnitOfferingMembership, DashboardReflection, LearningRecord, Classification, UserClassification, GroupMap, UserTrelloCourseBoardMap
@@ -139,7 +139,7 @@ def trello_remove_board(request):
         trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(user=request.user, course_code=course_code)
         unit = UnitOffering.objects.get(code=course_code)
     except ObjectDoesNotExist:
-        raise Http404
+        return HttpResponseServerError('<h1>Server Error (500)</h1><p>Could not remove Trello Board.</p>')
 
     new_board_list = []
     same_board_list = []
