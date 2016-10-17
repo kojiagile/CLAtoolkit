@@ -61,7 +61,8 @@ def process_trello(request):
 # TODO: ADD STUDENT REFRESH
 @api_view()
 def refreshtrello(request):
-    course_code = request.GET.get('course_code')
+    # course_code = request.GET.get('course_code')
+    course_id = request.GET.get('course_id')
     trello_courseboard_ids = request.GET.get('boards')
     trello_courseboard_ids = trello_courseboard_ids.split(',')
 
@@ -69,9 +70,12 @@ def refreshtrello(request):
     diag_count = 0
 
     for board_id in trello_courseboard_ids:
-        trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(board_id=board_id).filter(course_code=course_code)[0]
+        # trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(board_id=board_id).filter(course_code=course_code)[0]
+        trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(board_id=board_id).filter(unit = course_id)[0]
         #print 'got trello user course board map: %s' % (trello_user_course_map)
 
+        print trello_user_course_map.user
+        
         user = trello_user_course_map.user
         usr_profile = UserProfile.objects.get(user=user)
         usr_offline_auth = OfflinePlatformAuthToken.objects.get(user_smid=usr_profile.trello_account_name)

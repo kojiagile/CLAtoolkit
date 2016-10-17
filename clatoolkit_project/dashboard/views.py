@@ -44,7 +44,7 @@ def get_trello_boards(request):
 
     token = token_qs.token
     key = request.GET.get('key')
-    course_code = request.GET.get('course_code')
+    course_id = request.GET.get('course_id')
 
     #print key + ' >>>>> ' + token
 
@@ -67,7 +67,7 @@ def get_trello_boards(request):
         board_url = board['url']
         board_id = board['id']
 
-        html_resp = '<a href="#" class="board_choice" onclick="javascript:add_board(\''+course_code+'\',\''+board_id+'\')">'+board_name+'</a>'
+        html_resp = '<a href="#" class="board_choice" onclick="javascript:add_board(\''+course_id+'\',\''+board_id+'\')">'+board_name+'</a>'
 
         board_namesList.append(html_resp)
         board_namesList.append('</li>')
@@ -79,23 +79,21 @@ def get_trello_boards(request):
 @api_view()
 #API endpoint to allow students to attach a board to course
 def add_board_to_course(request):
-    course = UnitOffering.objects.get(code=request.GET.get('course_code'))
+    course = UnitOffering.objects.get(id = request.GET.get('course_id'))
     board_list = course.attached_trello_boards
 
     #print 'board list %s' % (board_list)
     #print 'board list is "": %s' % (board_list == '')
 
     if board_list == '':
-        new_board_list = request.GET.get('id')
+        new_board_list = request.GET.get('board_id')
     else:
-        new_board_list = board_list+','+request.GET.get('id')
+        new_board_list = board_list+','+request.GET.get('board_id')
 
     course.attached_trello_boards = new_board_list
-
     course.save()
 
-    trello_user_course_map = UserTrelloCourseBoardMap(user=request.user, course_code=course.code, board_id=request.GET.get('id'))
-
+    trello_user_course_map = UserTrelloCourseBoardMap(user=request.user, unit=course, board_id=request.GET.get('board_id'))
     trello_user_course_map.save()
 
     return Response('<b>Board successfully added to course - <a href="/dashboard/myunits/">Reload</a></b>')
@@ -131,13 +129,13 @@ def check_access(required_roles=None):
 @login_required
 @api_view()
 def trello_remove_board(request):
-    course_code = request.GET.get('course_code')
+    course_id = request.GET.get('course_id')
 
     trello_user_course_map = None
     unit = None
     try:
-        trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(user=request.user, course_code=course_code)
-        unit = UnitOffering.objects.get(code=course_code)
+        trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(user = request.user, unit = course_id)
+        unit = UnitOffering.objects.get(id = course_id)
     except ObjectDoesNotExist:
         return HttpResponseServerError('<h1>Server Error (500)</h1><p>Could not remove Trello Board.</p>')
 
@@ -169,8 +167,8 @@ def trello_remove_board(request):
 @api_view()
 def trello_myunits_restview(request):
         #Get course code, and match it with the user to obtain the board ID for the user for their specified course.
-        course_code = request.GET.get('course_code')
-        trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(user=request.user, course_code=course_code)
+        course_id = request.GET.get('course_id')
+        trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(user=request.user, unit = course_id)
 
         #If a board exists for the user and it's attached to the course
         if trello_user_course_map:
@@ -192,13 +190,13 @@ def trello_myunits_restview(request):
                 board = r.json()
 
                 response = {'data': '<a href="'+board['url']+'""><i class="fa fa-trello" aria-hidden="true"></i>   '+board['name']+'</a> | '
-                            '<a href="/dashboard/removeBoard?course_code='+course_code+'">Remove</a>', 'course_code': course_code}
+                            '<a href="/dashboard/removeBoard?course_id='+course_id+'">Remove</a>', 'course_id': course_id}
 
                 return Response(response)
 
         else: #Otherwise, we'll give the student the option to attach their trello board
-            response = {'data': '<a href="#" onclick="javascript:get_and_link_board(\''+course_code+'\')">Attach a Trello Board to plan your Work!</a>'
-                            '<div id="trello_board_display"></div>', 'course_code': course_code}
+            response = {'data': '<a href="#" onclick="javascript:get_and_link_board(\''+course_id+'\')">Attach a Trello Board to plan your Work!</a>'
+                            '<div id="trello_board_display"></div>', 'course_id': course_id}
             return Response(response)
 
 
