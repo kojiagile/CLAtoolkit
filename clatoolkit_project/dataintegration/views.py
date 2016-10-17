@@ -74,8 +74,6 @@ def refreshtrello(request):
         trello_user_course_map = UserTrelloCourseBoardMap.objects.filter(board_id=board_id).filter(unit = course_id)[0]
         #print 'got trello user course board map: %s' % (trello_user_course_map)
 
-        print trello_user_course_map.user
-        
         user = trello_user_course_map.user
         usr_profile = UserProfile.objects.get(user=user)
         usr_offline_auth = OfflinePlatformAuthToken.objects.get(user_smid=usr_profile.trello_account_name)
