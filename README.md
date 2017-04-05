@@ -13,8 +13,8 @@ The Connected Learning Analytics toolkit (new django architecture, superseeding 
 Local Installation using VirtualEnv
 ---------
 
-**CLAToolkit is built with Django. The installation is pretty standard but requires Postgres (for JSON document queries), Numpy and a range of Machine Learning Libraries such as Scikit Learn and Gensim**
-
+**CLAToolkit is built with Django. The installation is pretty standard but requires PostgreSQL, Numpy and a range of Machine Learning Libraries such as Scikit Learn and Gensim**  
+**CLAToolkit also requires Learning Record Store (LRS) to store/retrieve JSON data. You can see the instruction for installing LRS [here](https://github.com/zwaters/ADL_LRS)**  
 
 If you do not have VirtualEnv installed:
 ```bash
@@ -101,8 +101,12 @@ $ sudo -u username createdb --locale=en_US.utf-8 -E utf-8 -O username newdatabas
 $ psql newdatabasename < backedupdbname.bak
 ```
 
-**Edit .env**  
-Edit ```.env``` and add secret key + DB details  
+**Configure CLAToolkit environment file (.env) with your database credentials and social media secret ID and password**
+```bash
+$ cp .env.example .env
+$ nano .env
+```
+Then, edit ```.env``` and add secret key and DB details  
 
 
 **Migration**  
@@ -130,7 +134,7 @@ $ sudo pip install django-dotenv==1.4.1
 **Insert the default data into database**  
 Default LRS data needs to be stored in the database in advance. Run the insert SQL below.
 ```bash
-insert into xapi_clientapp values (1, 'CLAToolkit LRS', 'Connected Learning Analytics Toolkit', '1', '1bsL1k5HiQnFOo0J', 'http', 'lrs.beyondlms.org', 43, '/xapi/OAuth/initiate','/xapi/OAuth/token', '/xapi/OAuth/authorize', '/xapi/statements', '/regclatoolkitu/');
+insert into xapi_clientapp values (1, 'CLAToolkit LRS', 'Connected Learning Analytics Toolkit', '<LRS access token key>', '<LRS access token secret>', 'http', 'lrs.beyondlms.org', 43, '/xapi/OAuth/initiate','/xapi/OAuth/token', '/xapi/OAuth/authorize', '/xapi/statements', '/regclatoolkitu/');
 ```
   
 
