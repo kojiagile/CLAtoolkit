@@ -1,7 +1,7 @@
 # Setting up the CLA Toolkit with Apache
 How to setup the CLA Toolkit on Ubuntu 14.04 using the Apache server.  
 
-**The CLA toolkit needs to be installed in advance. The instruction can be found [here](https://github.com/kojiagile/CLAtoolkit/blob/koji/README.md#local-installation-using-virtualenv)**  inst
+**The CLA toolkit needs to be installed in advance. The instruction can be found [here](https://github.com/kojiagile/CLAtoolkit/blob/koji/README.md#local-installation-using-virtualenv)**  
 
 **Install Apache and dependancies**
 ```bash
