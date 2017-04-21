@@ -148,24 +148,73 @@
 {% block js_block %}
 {% autoescape off %}
 <script>
-$(function() {
-  $('#dataTables-activemembers').DataTable({responsive: true});
-  $('#dataTables-topcontent').DataTable({responsive: true});
+function showPlatformTimeseriesChart() {
+  // Get timeline data
+  url = '/api/unit/{{unit.id}}/timeseries/platforms'
+  $.ajax({
+    type: "GET",
+    url: url
+  })
+  .fail(function(data,textStatus, errorThrown){
+      console.log('Error! URL: ' + url + '\r\n' + errorThrown);
+  })
+  .done(function( data ) {
+    self.initialisePlatformTimelineChart(data);
+  });
+}
+
+
+function createPlatformTimeseriesData(data) {
+  var allTimeseries = [];
+  var tempSeries = {};
+  activity = data['activities'][0];
+  for(key in activity){
+    if (key == 'date') continue;
+    obj = {
+      name : key,
+      data: [], // Create a series later
+      id: 'dataseries' + key
+    }
+    allTimeseries.push(obj);
+
+    // For saving data later
+    tempSeries[key] = [];
+  }
+
+  $.each(data['activities'], function(key, val) {
+    var dateArray = val['date'].split('-');
+    for(key in val){
+      if (key == 'date') continue;
+      data = tempSeries[key];
+      data.push([Date.UTC(dateArray[0], dateArray[1], dateArray[2]), val[key]]);
+    }
+
+    $.each(allTimeseries, function(key, val) {
+      series = tempSeries[val['name']];
+      val['data'] = series;
+    });
+    
+  });
+  console.log(allTimeseries);
+  return allTimeseries;
+}
+
+
+function initialisePlatformTimelineChart(data) {
+
+  series = createPlatformTimeseriesData(data);
 
   // Create Platform Activity Chart
   $('#platform_pageview_chart').highcharts('StockChart', {
-
       rangeSelector : {
           selected : 'all'
       },
-
       tooltip: {
           style: {
               width: '200px'
           },
           valueDecimals: 0
       },
-
       yAxis : {
           min: 0,
           title : {
@@ -175,44 +224,8 @@ $(function() {
       legend: {
           enabled: true
       },
+      series: series,
 
-      series : [{
-          name : 'Twitter',
-          data : [{{ twitter_timeline }}],
-          id : 'dataseries'
-      },{
-          name : 'Facebook',
-          data : [{{ facebook_timeline }}],
-          id : 'dataseries1'
-      },{
-          name : 'Forum',
-          data : [{{ forum_timeline }}],
-          id : 'dataseries2'
-      },{
-          name : 'YouTube',
-          data : [{{ youtube_timeline }}],
-          id : 'dataseries3'
-      },{
-          name : 'Diigo',
-          data : [{{ diigo_timeline }}],
-          id : 'dataseries4'
-      },{
-          name : 'Blog',
-          data : [{{ blog_timeline }}],
-          id : 'dataseries5'
-      },{
-          name : 'Trello',
-          data : [{{ trello_timeline }}],
-          id : 'dataseries6'
-      },{
-          name : 'GitHub',
-          data : [{{ github_timeline }}],
-          id : 'dataseries7'
-      },{
-          name : 'Slack',
-          data : [{{ slack_timeline }}],
-          id : 'dataseries8'
-      }]
   }, function (chart) {
       // Show series in the navigator (the mini-chart)
       for(var i = 0; i < chart.options.series.length; i++) {
@@ -228,6 +241,12 @@ $(function() {
         });
       }
   });
+
+}
+$(function() {
+  $('#dataTables-activemembers').DataTable({responsive: true});
+  $('#dataTables-topcontent').DataTable({responsive: true});
+  showPlatformTimeseriesChart();
 
   // Create Activity Chart
   $('#pageview_chart').highcharts('StockChart', {
