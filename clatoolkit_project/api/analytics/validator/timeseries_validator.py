@@ -1,9 +1,7 @@
 __author__ = 'Koji'
 
-import re
 from ..endpoint.timeseries import Timeseries
 from xapi.statement.xapi_settings import xapi_settings
-from clatoolkit.models import UnitOffering
 from common.util import Utility
 from validator import Validator
 
@@ -16,9 +14,7 @@ class TimeseriesValidator(Validator):
 	@classmethod
 	def valid_timeseries_params(self, request, args, kw):
 		try:
-			try:
-				UnitOffering.objects.get(id = int(kw['unit_id']))
-			except exp:
+			if not self.valid_unit_id(kw['unit_id']):
 				raise InvalidParameterError(exp, 'Unit ID')
 
 			# TODO: validate user (implement it later?)

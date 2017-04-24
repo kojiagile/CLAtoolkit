@@ -9,6 +9,17 @@ from common.util import Utility
 
 class Validator(object):
 	@classmethod
+	def valid_unit_id(self, unit_id):
+		ret = True
+		try:
+			UnitOffering.objects.get(id = int(unit_id))
+		except exp:
+			ret = False
+
+		return ret
+
+
+	@classmethod
 	def valid_platform_names(self, platform_filter, unit_id):
 		# If the parameter does not match to platform/verb name defined in the toolkit, it is invalid param.
 		try:

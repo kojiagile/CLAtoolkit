@@ -148,6 +148,11 @@
 {% block js_block %}
 {% autoescape off %}
 <script>
+
+String.prototype.capitalize = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
 function showPlatformTimeseriesChart() {
   // Get timeline data
   url = '/api/unit/{{unit.id}}/timeseries/platforms'
@@ -163,46 +168,46 @@ function showPlatformTimeseriesChart() {
   });
 }
 
+function getAvailablePlatforms() {
 
-function createPlatformTimeseriesData(data) {
-  var allTimeseries = [];
-  var tempSeries = {};
-  activity = data['activities'][0];
-  for(key in activity){
-    if (key == 'date') continue;
-    obj = {
-      name : key,
-      data: [], // Create a series later
-      id: 'dataseries' + key
-    }
-    allTimeseries.push(obj);
-
-    // For saving data later
-    tempSeries[key] = [];
-  }
-
-  $.each(data['activities'], function(key, val) {
-    var dateArray = val['date'].split('-');
-    for(key in val){
-      if (key == 'date') continue;
-      data = tempSeries[key];
-      data.push([Date.UTC(dateArray[0], dateArray[1], dateArray[2]), val[key]]);
-    }
-
-    $.each(allTimeseries, function(key, val) {
-      series = tempSeries[val['name']];
-      val['data'] = series;
-    });
-    
+  // Get available platforms in the unit first, then get verb timeseries data.
+  url = '/api/unit/{{unit.id}}/platforms'
+  $.ajax({
+    type: "GET",
+    url: url
+  })
+  .fail(function(data,textStatus, errorThrown){
+      console.log('Error! URL: ' + url + '\r\n' + errorThrown);
+  })
+  .done(function( data ) {
+    self.showVerbTimeseriesChart(data);
   });
-  console.log(allTimeseries);
-  return allTimeseries;
+}
+
+function showVerbTimeseriesChart(data) {
+
+  // Filter param (verbs)
+  filter = 'created,shared,liked,commented'
+  // Platforms param
+  platforms = data['platforms'].join(",");
+
+  // Get available platforms in the unit first, then get verb timeseries data.
+  url = '/api/unit/{{unit.id}}/timeseries/verbs?filter=' + filter + '&platforms=' + platforms;
+  $.ajax({
+    type: "GET",
+    url: url
+  })
+  .fail(function(data,textStatus, errorThrown){
+      console.log('Error! URL: ' + url + '\r\n' + errorThrown);
+  })
+  .done(function( data ) {
+    self.initialiseVerbTimelineChart(data);
+  });
 }
 
 
 function initialisePlatformTimelineChart(data) {
-
-  series = createPlatformTimeseriesData(data);
+  series = parsePlatformTimeseriesData(data);
 
   // Create Platform Activity Chart
   $('#platform_pageview_chart').highcharts('StockChart', {
@@ -241,12 +246,10 @@ function initialisePlatformTimelineChart(data) {
         });
       }
   });
-
 }
-$(function() {
-  $('#dataTables-activemembers').DataTable({responsive: true});
-  $('#dataTables-topcontent').DataTable({responsive: true});
-  showPlatformTimeseriesChart();
+
+function initialiseVerbTimelineChart(data) {
+  series = parseVerbTimeseriesData(data);
 
   // Create Activity Chart
   $('#pageview_chart').highcharts('StockChart', {
@@ -271,25 +274,8 @@ $(function() {
       legend: {
           enabled: true
       },
+      series : series
 
-      series : [{
-          name : 'Posts',
-          data : [{{ posts_timeline }}],
-          id : 'dataseries'
-      },{
-          name : 'Shares',
-          data : [{{ shares_timeline }}],
-          id : 'dataseries1'
-      },{
-          name : 'Likes',
-          data : [{{ likes_timeline }}],
-          id : 'dataseries2'
-      },{
-          name : 'Comments',
-          data : [{{ comments_timeline }}],
-          id : 'dataseries2'
-      }]
-      
   }, function (chart) {
       // Show series in the navigator (the mini-chart)
       for(var i = 0; i < chart.options.series.length; i++) {
@@ -305,6 +291,94 @@ $(function() {
         });
       }
   });
+}
+
+
+function parsePlatformTimeseriesData(data) {
+  var allTimeseries = [];
+  var tempSeries = {};
+  activity = data['activities'][0];
+  for(key in activity){
+    if (key == 'date') continue;
+    obj = {
+      name : key,
+      data: [], // Create a series later
+      id: 'dataseries' + key
+    }
+    allTimeseries.push(obj);
+
+    // For saving data later
+    tempSeries[key] = [];
+  }
+
+  $.each(data['activities'], function(key, val) {
+    var dateArray = val['date'].split('-');
+    for(key in val){
+      if (key == 'date') continue;
+      data = tempSeries[key];
+      data.push([Date.UTC(dateArray[0], dateArray[1], dateArray[2]), val[key]]);
+    }
+
+    $.each(allTimeseries, function(key, val) {
+      series = tempSeries[val['name']];
+      val['data'] = series;
+    });
+    
+  });
+  // console.log(allTimeseries);
+  return allTimeseries;
+}
+
+
+function parseVerbTimeseriesData(data) {
+  var allTimeseries = [];
+  var tempSeries = {};
+  activity = data['activities'][0];
+  for(key in activity){
+    if (key == 'date') continue;
+    var verbName = key == 'created' ? 'Post' : key.capitalize();
+    obj = {
+      name : verbName,
+      data: [], // Create a series later
+      id: 'dataseries_' + key
+    }
+    allTimeseries.push(obj);
+
+    // For saving data later
+    tempSeries[verbName] = [];
+  }
+
+  $.each(data['activities'], function(key, val) {
+    var dateArray = val['date'].split('-');
+    for(key in val){
+      if (key == 'date') continue;
+
+      var verbName = key == 'created' ? 'Post' : key.capitalize();
+      data = tempSeries[verbName];
+      total = 0;
+      for (innerKey in val[key]) {
+        // Add up the count of each platform activity counts
+        total += val[key][innerKey];
+      }
+
+      data.push([Date.UTC(dateArray[0], dateArray[1], dateArray[2]), total]);
+    }
+
+    $.each(allTimeseries, function(key, val) {
+      series = tempSeries[val['name']];
+      val['data'] = series;
+    });
+  });
+
+  return allTimeseries;
+}
+
+
+$(function() {
+  $('#dataTables-activemembers').DataTable({responsive: true});
+  $('#dataTables-topcontent').DataTable({responsive: true});
+  showPlatformTimeseriesChart();
+  getAvailablePlatforms();
 
   // Create the Platform Activity Pie Chart
   $('#platform_activity_pie').highcharts({

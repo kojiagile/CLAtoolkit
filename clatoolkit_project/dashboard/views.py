@@ -258,10 +258,6 @@ def dashboard(request):
         activity_pie_series = get_verb_pie_data(unit, platform = platform)
         platformactivity_pie_series = get_platform_pie_data(unit)
 
-        # Activity Time line data (verbs and platform)
-        timeline_data = get_verb_timeline_data(unit, platform, None)
-
-        # p = platform if platform != "all" else None
         activememberstable = get_active_members_table(unit, platform)
         topcontenttable = get_cached_top_content(platform, unit)
 
@@ -269,9 +265,6 @@ def dashboard(request):
             'title': title, 'course_code':unit.code, 'platform':platform, 'show_dashboardnav':show_dashboardnav,
             'activememberstable': activememberstable, 'unit': unit,
             'topcontenttable': topcontenttable, 'show_allplatforms_widgets': show_allplatforms_widgets,
-
-            'posts_timeline': timeline_data['posts'], 'shares_timeline': timeline_data['shares'],
-            'likes_timeline': timeline_data['likes'], 'comments_timeline': timeline_data['comments'],
 
             'activity_pie_series': activity_pie_series, 'platformactivity_pie_series': platformactivity_pie_series
             }
