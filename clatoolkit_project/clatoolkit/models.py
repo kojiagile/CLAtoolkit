@@ -1,5 +1,6 @@
 import os
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import User
 from django_pgjson.fields import JsonField
 from django.core.exceptions import ObjectDoesNotExist
@@ -77,6 +78,12 @@ class OfflinePlatformAuthToken(models.Model):
     token = models.CharField(max_length=1000, blank=False)
     platform = models.CharField(max_length=1000, blank=False)
     user = models.ForeignKey(User)
+
+class UserPlatformResourceMap(models.Model):
+    user = models.ForeignKey(User)
+    unit = models.ForeignKey('UnitOffering')
+    resource_id = models.CharField(max_length=5000, blank=False)
+    platform = models.CharField(max_length=100, blank=False)
 
 class UnitOffering(models.Model):
     code = models.CharField(max_length=5000, blank=False, verbose_name="Unit Code", unique=True)
@@ -220,21 +227,23 @@ class UnitOffering(models.Model):
         platforms = []
 
         if len(self.twitter_hashtags_as_list()):
-            platforms.append('twitter')
+            platforms.append(xapi_settings.PLATFORM_TWITTER)
         if len(self.facebook_groups_as_list()):
-            platforms.append('facebook')
+            platforms.append(xapi_settings.PLATFORM_FACEBOOK)
         if len(self.forum_urls_as_list()):
-            platforms.append('forum')
+            platforms.append(xapi_settings.PLATFORM_FORUM)
         if len(self.youtube_channelIds_as_list()):
-            platforms.append('youtube')
+            platforms.append(xapi_settings.PLATFORM_YOUTUBE)
         if len(self.diigo_tags_as_list()):
-            platforms.append('diigo')
+            platforms.append(xapi_settings.PLATFORM_DIIGO)
         if len(self.blogmember_urls_as_list()):
-            platforms.append('blog')
-        if len(self.github_urls_as_list()):
-            platforms.append('github')
+            platforms.append(xapi_settings.PLATFORM_BLOG)
         if len(self.trello_boards_as_list()):
-            platforms.append('trello')
+            platforms.append(xapi_settings.PLATFORM_TRELLO)
+        if self.github_member_count() > 0:
+            platforms.append(xapi_settings.PLATFORM_GITHUB)
+        if self.slack_member_count() > 0:
+            platforms.append(xapi_settings.PLATFORM_SLACK)
 
         return platforms
 
@@ -258,6 +267,20 @@ class UnitOffering(models.Model):
             params.append(xapi_settings.PLATFORM_TRELLO)
 
         return ','.join(params)
+
+    def get_required_verbs(self, platform_list = None):
+        platforms = platform_list
+        if platforms is None or len(platforms) == 0 or 'all' in platforms:
+            platforms = self.get_required_platforms()
+
+        verb_list = []
+        for p in platforms:
+            platform_verbs = settings.DATAINTEGRATION_PLUGINS[p].xapi_verbs
+            platform_verbs.sort()
+            # verb_list[p] = platform_verbs
+            verb_list.extend(platform_verbs)
+
+        return list(set(verb_list))
 
 
 class OauthFlowTemp(models.Model):
@@ -340,12 +363,6 @@ class UserClassification(models.Model):
     feature = models.TextField(blank=True)
     trained = models.BooleanField(blank=False, default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-
-class UserPlatformResourceMap(models.Model):
-    user = models.ForeignKey(User)
-    unit = models.ForeignKey(UnitOffering)
-    resource_id = models.CharField(max_length=5000, blank=False)
-    platform = models.CharField(max_length=100, blank=False)
 
 class ApiCredentials(models.Model):
     platform_uid = models.CharField(max_length=5000, blank=False)
